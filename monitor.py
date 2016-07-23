@@ -1,15 +1,23 @@
 import subprocess
-from time import sleep
+import psutil
+from time import sleep, struct_time
+from time import strftime, time, localtime
+
+class core:
+    def __init__(self):
+        temperature = 0.0
+        usage = 0.0
 
 
 class sensors:
-    def __init__(self, sensor_output):
-        self.temp = 0
+    def __init__(self):
+        self.temperature = 0.0
         self.fans = list()
         self.fan_speed = dict()
         self.cpu_temp = dict()
         self.cores = dict()
 
+        sensor_output = subprocess.check_output('sensors')
         lines = iter(sensor_output.splitlines())
         for line in lines:
             if line.startswith(b'fan'):
@@ -18,7 +26,7 @@ class sensors:
                 self.fans.append(fan)
                 self.fan_speed[fan] = speed
             elif line.startswith(b'temp'):
-                self.temp = float(line[line.find(b':') + 1:line.find(b'\xc2\xb0C')])
+                self.temperature = float(line[line.find(b':') + 1:line.find(b'\xc2\xb0C')])
             elif line.startswith(b'coretemp'):
                 _ = next(lines)
                 line = next(lines)
@@ -29,12 +37,13 @@ class sensors:
                 self.cpu_temp[cpu_index] = temp
 
             elif line.startswith(b'Core'):
-                core = line[0:line.find(b':')]
-                core = core[core.find(b' ') + 1:].strip()
+                c = line[0:line.find(b':')]
+                c = c[c.find(b' ') + 1:].strip()
                 temp = line[line.find(b':') + 1:line.find(b'\xc2\xb0C')].strip()
                 if not self.cores.get(cpu_index):
                     self.cores[cpu_index] = {}
-                self.cores[cpu_index][int(core)] = float(temp)
+                self.cores[cpu_index][int(c)] = core()
+                self.cores[cpu_index][int(c)].temperature = float(temp)
 
     def core_temp(self, core, temp):
         self.cpu_temp[core] = temp
@@ -46,9 +55,10 @@ class sensors:
         self.fan_speed[fan] = speed
 
     def set_temp(self, temp):
-        self.temp = temp
+        self.temperature = temp
 
-    def read_sensor_output(self, sensor_output):
+    def update(self):
+        sensor_output = subprocess.check_output('sensors')
         lines = iter(sensor_output.splitlines())
         for line in lines:
             if line.startswith(b'fan'):
@@ -67,28 +77,28 @@ class sensors:
                 self.cpu_temp[cpu_index] = temp
 
             elif line.startswith(b'Core'):
-                core = line[0:line.find(b':')]
-                core = core[core.find(b' ') + 1:].strip()
+                c = line[0:line.find(b':')]
+                c = c[c.find(b' ') + 1:].strip()
                 temp = line[line.find(b':') + 1:line.find(b'\xc2\xb0C')].strip()
-                self.cores[cpu_index][int(core)] = float(temp)
+                self.cores[cpu_index][int(c)].temperature = float(temp)
 
     def get_core_temperatures(self):
         temperatures = [0] * sum(len(v) for v in self.cores.values())
         core_index = 0
         for cpu in self.cores:
             for core in self.cores[cpu]:
-                temperatures[core_index] = self.cores[cpu][core]
+                temperatures[core_index] = self.cores[cpu][core].temperature
                 core_index += 1
-
-        print(core_index)
         return (temperatures)
 
 
-sensor = sensors(subprocess.check_output('sensors'))
-
+sensor = sensors()
 while True:
-    sensor.read_sensor_output(subprocess.check_output('sensors'))
-    print(sensor.get_core_temperatures())
+    sensor.update()
+    with open('cpu_temperature.log', 'a') as f:
+        output = strftime('%Y-%m-%d %H:%M:%S', localtime()) + '\t'
+        output += ';'.join([str(x) for x in sensor.get_core_temperatures()]) + '\n'
+        f.write(output)
     sleep(1)
 
 
