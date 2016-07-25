@@ -8,7 +8,8 @@ import http.client
 from collections import defaultdict
 import json
 import os
-
+import monitor
+from time import strftime, localtime
 
 def tail(f, lines=1, _buffer=4098):
     """Tail a file and get n lines from the end
@@ -136,6 +137,15 @@ class MyRequestHandler(BaseHTTPRequestHandler):
             for i, value in enumerate(values):
                 data.append({'x': timestamps, 'y': values[i]})
             self.wfile.write(bytes(json.dumps({'data': data, 'averages': averages}), 'utf-8'))
+        elif self.path == '/current_cpu_temperature':
+            send_header(self, format='JSON')
+            sensor = monitor.sensors()
+            temperatures = sensor.get_core_temperatures()
+            timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
+            data = list()
+            for temperature in temperatures:
+                data.append({'x': timestamp, 'y': temperature})
+            self.wfile.write(bytes(json.dumps({'data': data, 'averages': {}}), 'utf-8'))
 
 
         else:

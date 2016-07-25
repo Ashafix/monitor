@@ -1,7 +1,6 @@
 import subprocess
 import psutil
-from time import sleep, struct_time
-from time import strftime, time, localtime
+from time import sleep, strftime, localtime, time
 
 class core:
     def __init__(self):
@@ -83,6 +82,10 @@ class sensors:
                 self.cores[cpu_index][int(c)].temperature = float(temp)
 
     def get_core_temperatures(self):
+        """
+
+        :rtype: list
+        """
         temperatures = [0] * sum(len(v) for v in self.cores.values())
         core_index = 0
         for cpu in self.cores:
@@ -92,14 +95,16 @@ class sensors:
         return (temperatures)
 
 
-sensor = sensors()
-while True:
-    sensor.update()
-    with open('cpu_temperature.log', 'a') as f:
-        output = strftime('%Y-%m-%d %H:%M:%S', localtime()) + '\t'
-        output += ';'.join([str(x) for x in sensor.get_core_temperatures()]) + '\n'
-        f.write(output)
-    sleep(1)
+if __name__ == '__main__':
+    sensor = sensors()
+    while True:
+        start_time = time()
+        sensor.update()
+        with open('cpu_temperature.log', 'a') as f:
+            output = strftime('%Y-%m-%d %H:%M:%S', localtime()) + '\t'
+            output += ';'.join([str(x) for x in sensor.get_core_temperatures()]) + '\n'
+            f.write(output)
+        sleep(time() - start_time)
 
 
 

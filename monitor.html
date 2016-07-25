@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="style.css">
     <script src="plotly-latest.min.js"></script>
     <script>
+
+
       function createRequest() {
         var result = null;
         if (window.XMLHttpRequest) {
@@ -24,28 +26,60 @@
       var req = createRequest(); // defined above
       // Create the callback:
       req.onreadystatechange = function() {
-      if (req.readyState != 4) return; // Not there yet
+        if (req.readyState != 4) return; // Not there yet
         // Request successful, read the response
         var cpu_avg = document.getElementById('cpu_avg');
         var cpus = document.getElementById('cpus');
-        var obj = JSON.parse(req.responseText)
-        var layout = {showlegend: false};
-
+        var obj = JSON.parse(req.responseText);
+        var layout = {
+          showlegend: false,
+          xaxis: {autorange: true},
+          yaxis: {range: [30, 100]}
+        };
         Plotly.newPlot(cpu_avg, obj.averages, layout);
         Plotly.newPlot(cpus, obj.data, layout);
+        //console.log(obj.averages)
       }
       var url = "http://192.168.178.37:8004/cpu_temperature";
       req.open("GET", url, true);
       req.send();
     }
+    function realtime_cpu() {
+      var req = createRequest(); // defined above
+      // Create the callback:
+      req.onreadystatechange = function() {
+        if (req.readyState != 4) return; // Not there yet
+        // Request successful, read the response
+        var cpu_rt = document.getElementById('cpu_realtime');
+        var obj = JSON.parse(req.responseText);
+        var layout = {type: 'bar'};
+        var values = [];
+        var x = [];
+        for (var i = 0; i < obj.data.length; i += 1) {
+          x.push(i);
+          values.push(obj.data[i].y);
+        }
+        var layout = {
+          xaxis: {autorange: true},
+          yaxis: {range: [30, 100]}
+        };
+        Plotly.newPlot(cpu_rt, [{'x': x, 'y': values, 'type': 'bar'}], layout);
+      }
+      var url = "http://192.168.178.37:8004/current_cpu_temperature";
+      req.open("GET", url, true);
+      req.send();
+
+    }
     update_cpu();
     var t = setInterval(update_cpu, 5000);
+    var tt = setInterval(realtime_cpu, 1000);
     </script>
   </head>
   
   <body>
     <div id="cpu_avg"></div>
     <div id="cpus"></div>
+    <div id="cpu_realtime"></div>
   </body>
 </html>
 
