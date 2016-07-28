@@ -146,6 +146,17 @@ class MyRequestHandler(BaseHTTPRequestHandler):
             for temperature in temperatures:
                 data.append({'x': timestamp, 'y': temperature})
             self.wfile.write(bytes(json.dumps({'data': data, 'averages': {}}), 'utf-8'))
+        elif self.path == '/disk_usage':
+            send_header(self, format='JSON')
+            devices = dict()
+            disks = psutil.disk_partitions(all=False)
+            for disk in disks:
+                try:
+                    devices[disk.device] = [psutil.disk_usage(disk.mountpoint).total,
+                                            psutil.disk_usage(disk.mountpoint).free]
+                except:
+                    pass
+            self.wfile.write(bytes(json.dumps(devices), 'utf-8'))
 
 
         else:

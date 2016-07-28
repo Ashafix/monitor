@@ -70,9 +70,48 @@
       req.send();
 
     }
+
+    function update_disks() {
+      var req = createRequest(); // defined above
+      var disk;
+      var id = '';
+
+      // Create the callback:
+      req.onreadystatechange = function() {
+      if (req.readyState != 4) return; // Not there yet
+        // Request successful, read the response
+        var obj = JSON.parse(req.responseText)
+        var layout = {
+          height: 400,
+          width: 500
+        };
+        for (var key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            id = 'disk__' + key.replace(/\//g, '_');
+            id = id.replace(/__/g, '_');
+            disk = document.getElementById(id);
+            if (disk === null) {
+              disks = document.getElementById('disks');
+              disk = document.createElement('div');
+              disk.setAttribute("id", id)
+              disks.appendChild(disk);
+            }
+            var data = [{values: obj[key], labels: ['Total', 'Free'], type: 'pie'}];
+            Plotly.newPlot(disk, data, layout);
+          }
+        }
+
+      }
+      var url = "http://192.168.178.37:8004/disk_usage";
+      req.open("GET", url, true);
+      req.send();
+
+    }
     update_cpu();
+
     var t = setInterval(update_cpu, 5000);
     var tt = setInterval(realtime_cpu, 1000);
+    var ttt = setInterval(update_disks, 1000);
     </script>
   </head>
   
@@ -80,6 +119,7 @@
     <div id="cpu_avg"></div>
     <div id="cpus"></div>
     <div id="cpu_realtime"></div>
+    <div id="disks"</div>
   </body>
 </html>
 
