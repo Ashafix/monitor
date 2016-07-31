@@ -10,6 +10,7 @@ import json
 import os
 import monitor
 from time import strftime, localtime
+import psutil
 
 def tail(f, lines=1, _buffer=4098):
     """Tail a file and get n lines from the end
@@ -146,6 +147,26 @@ class MyRequestHandler(BaseHTTPRequestHandler):
             for temperature in temperatures:
                 data.append({'x': timestamp, 'y': temperature})
             self.wfile.write(bytes(json.dumps({'data': data, 'averages': {}}), 'utf-8'))
+        elif self.path == '/cpu_usage':
+            send_header(self, format='JSON')
+            psutil.cpu_percent(interval=0.0, percpu=True)
+            usage = psutil.cpu_percent(interval=0.0, percpu=True)
+            data = list()
+            time_stamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
+            # merge threads to cores if needed
+            if psutil.cpu_count(logical=True) != psutil.cpu_count(logical=False):
+                threads = int(psutil.cpu_count(logical=True) / psutil.cpu_count(logical=False))
+                merged_data = list()
+                for i in range(0, psutil.cpu_count(), threads):
+                    for t in range(threads):
+                        avg = usage[i + t]
+                    merged_data.append(float(avg) / float(t))
+                usage = merged_data
+
+            for u in usage:
+                data.append({'x': time_stamp, 'y': u})
+            average = float(sum([u for u in usage])) / len(usage)
+            self.wfile.write(bytes(json.dumps({'data': data, 'average': average}), 'utf-8'))
         elif self.path == '/disk_usage':
             send_header(self, format='JSON')
             devices = dict()
