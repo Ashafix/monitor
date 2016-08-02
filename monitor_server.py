@@ -150,7 +150,7 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         elif self.path == '/cpu_usage':
             send_header(self, format='JSON')
             psutil.cpu_percent(interval=0.0, percpu=True)
-            usage = psutil.cpu_percent(interval=0.0, percpu=True)
+            usage = psutil.cpu_percent(interval=0.01, percpu=True)
             data = list()
             time_stamp = strftime('%Y-%m-%d %H:%M:%S', localtime())
             # merge threads to cores if needed
