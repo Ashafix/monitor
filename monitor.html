@@ -124,9 +124,9 @@
             }
             
             function update_cpu_usage() {
-                if (document.getElementById('check_cpu_usage').checked) {
+                if (document.getElementById('check_cpu_usage_average').checked) {
                     void(0);
-                } else if (document.getElementById('check_cpu_usage_average').checked) {
+                } else if (document.getElementById('check_cpu_usage_bar').checked) {
                     void(0);
                 } else if (document.getElementById('check_cpu_usage_bubbles').checked) {
                     void(0);
@@ -146,8 +146,8 @@
                         xaxis: {autorange: true},
                         yaxis: {range: [-5, 105]}
                     };
-                    if (document.getElementById('check_cpu_usage').checked) {
-                        var cpu_usage = document.getElementById('graph_cpu_usage');
+                    if (document.getElementById('check_cpu_usage_average').checked) {
+                        var cpu_usage = document.getElementById('graph_cpu_usage_average');
                         var data_points = [];
                         for (i = 0; i < obj.data.length; i += 1) {
                             if (cpu_usage_x.length < i + 1) {
@@ -166,7 +166,7 @@
                         }
                         Plotly.newPlot(cpu_usage, data_points, layout);
                     }
-                    if (document.getElementById('check_cpu_usage_average').checked) {
+                    if (document.getElementById('check_cpu_usage_bar').checked) {
                         var cpu_usage_bar = document.getElementById('graph_cpu_usage_bar');
                         layout = {'barmode': 'stack'};
                         Plotly.newPlot(cpu_usage_bar, [{'x': ['CPU usage'], 'y': [obj.average], 'name': 'used', 'type': 'bar'}, {'x': ['CPU usage'], 'y': [100 - obj.average], 'name': 'available', 'type': 'bar'}], layout);
@@ -284,9 +284,11 @@
                 var i = 0;
                 var j = 0;
                 for (i = 0; i < classname.length; i += 1) {
-                    e = document.getElementById(classname[i].id.replace('check_', 'options_'));
-                    e.hidden = !classname[i].checked;
+                    //e = document.getElementById(classname[i].id.replace('check_', 'options_'));
+                    //e.hidden = !classname[i].checked;
                     e = document.getElementById(classname[i].id.replace('check_', 'graph_'));
+                    console.log(classname[i].id);
+                    console.log(classname[i].id.replace('check_', 'graph_'));
                     e.hidden = !classname[i].checked;
                     c = e.children;
                     for (j = 0; j < c.length; j += 1) {
@@ -299,7 +301,7 @@
                 document.getElementById("url").onchange = function () {
                     server_url = document.getElementById("url").value;
                 };
-                server_url = document.getElementById("url").value;
+                
                 document.getElementById("options").onclick = function () {
                     document.getElementById("options-expanded").hidden = !document.getElementById("options-expanded").hidden;
                 };
@@ -314,6 +316,26 @@
                 var t_cpu_rt_single = setInterval(realtime_cpu_single, 1000);
                 var t_disk = setInterval(update_disks, 1000);
                 var t_usage = setInterval(update_cpu_usage, 1000);
+                var params = {};
+                if (location.search) {
+                    var parts = location.search.substring(1).split('&');
+                    var nv;
+                    for (i = 0; i < parts.length; i++) {
+                        nv = parts[i].split('=');
+                        if (!nv[0]) continue;
+                        params[nv[0]] = nv[1] || true;
+                        if (document.getElementById(nv[0]) !== null) {
+                            console.log('hide me');
+                            document.getElementById(nv[0]).hidden = nv[1];
+                            document.getElementById(nv[0].replace('graph', 'check')).checked = !nv[1];
+                        }
+                        if (nv[0] === 'serverurl') {
+                            console.log(nv[1]);
+                            document.getElementById('url').value = nv[1];
+                        }
+                    }
+                }
+                server_url = document.getElementById("url").value;
             };
         </script>
     </head>
@@ -359,17 +381,18 @@
             </div>
 
             <div id="options_cpu_usage">
-                <input type="checkbox" class="checkbox" id="check_cpu_usage" checked>Plot CPU average
-                <input type="checkbox" class="checkbox" id="check_cpu_usage_average" checked>Plot CPU average bar
+                <input type="checkbox" class="checkbox" id="check_cpu_usage_average" checked>Plot CPU average
+                <input type="checkbox" class="checkbox" id="check_cpu_usage_bar" checked>Plot CPU average bar
                 <input type="checkbox" class="checkbox" id="check_cpu_usage_bubbles" checked>Plot CPU average & temperature as bubbles
                 <li>
                     Refresh time<input type="number" id="cpu_usage_refresh" value=1000 min=100>
                 </li>
             </div>
+            
+            <input type="checkbox" class="checkbox" id="check_disks" checked>Disks
             <div id="options_disks">
-                <input type="checkbox" class="checkbox" id="check_disks" checked>Disks
                 <li>
-                    Refresh time<input type="number" id="cpu_disks_refresh" value=1000 min=100>
+                  Refresh time<input type="number" id="disks_refresh" value=1000 min=100>
                 </li>
             </div>
         </div>
@@ -377,7 +400,7 @@
         <div class="plotly_graph" id="graph_cpus"></div>
         <div class="plotly_graph" id="graph_cpu_rt"></div>
         <div class="plotly_graph" id="graph_cpu_rt_single"></div>
-        <div class="plotly_graph" id="graph_cpu_usage"></div>
+        <div class="plotly_graph" id="graph_cpu_usage_average"></div>
         <div class="plotly_graph" id="graph_cpu_usage_bar"></div>
         <div class="plotly_graph" id="graph_cpu_usage_bubbles"></div>
         <div class="plotly_graph" id="graph_disks"</div>
